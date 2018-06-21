@@ -54,7 +54,7 @@ function help_menu() {
     echo "  -nt | --no-tmpfs:    Do not use tmpfs for building (useful if you don't have much RAM)."
     echo "  -nu | --no-update:   Do not update the downloaded components before building (useful if you have slow internet)."
     echo "  -p  | --package:     Possible values: gz or xz. Compresses toolchain after build."
-    echo "  -t  | --tarballs:    Use tarballs for binutils, ISL, and, GCC"
+    echo "  -t  | --tarballs:    Use tarballs for binutils, MPFR, MPC, ISL, glibc, and, GCC"
     echo "  -V  | --verbose:     Make script print all output, not just errors and the ending information"
     echo
 }
@@ -185,10 +185,14 @@ function setup_variables() {
     BINUTILS_git="binutils-2_31-branch"
     BINUTILS_tar="2.31"
     GMP="gmp-6.1.99-$(check_date)"
-    MPFR="mpfr-4.0.1"
-    MPC="mpc-1.1.0"
-    ISL="isl-0.20"
-    GLIBC="glibc-2.28"
+    MPFR_svn="trunk"
+    MPFR_tar="mpfr-4.0.1"
+    MPC_git="master"
+    MPC_tar="mpc-1.1.0"
+    ISL_git="master"
+    ISL_tar="isl-0.20"
+    GLIBC_git="master"
+    GLIBC_tar="glibc-2.28"
     LINUX="4.18"
 
     # Start of script
@@ -238,15 +242,15 @@ function parse_parameters() {
         case "${SOURCE}:${VERSION}" in
             "gnu:4") die "Will not build, Use Linaro instead" ;;
             "gnu:5") GCC=gcc-5-branch
-                     ISL="isl-0.17.1" ;;
+                     ISL_git="isl-0.17.1" ;;
             "gnu:6") GCC=gcc-6-branch ;;
             "gnu:7") GCC=gcc-7-branch ;;
             "gnu:8") GCC=gcc-8-branch ;;
             "gnu:9") GCC=master ;;
             "linaro:4") GCC=linaro-local/releases/linaro-4.9-2017.01
-                        ISL="isl-0.17.1" ;;
+                        ISL_git="isl-0.17.1" ;;
             "linaro:5") GCC=linaro-local/gcc-5-integration-branch
-                        ISL="isl-0.17.1" ;;
+                        ISL_git="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-local/gcc-6-integration-branch ;;
             "linaro:7") GCC=linaro-local/gcc-7-integration-branch ;;
             "linaro:8") die "There's no such thing as Linaro 8.x Clannad..." -h ;;
@@ -258,15 +262,15 @@ function parse_parameters() {
         case "${SOURCE}:${VERSION}" in
             "gnu:4") die "Will not build, Use Linaro instead" ;;
             "gnu:5") GCC=gcc-5.5.0
-                     ISL="isl-0.17.1" ;;
+                     ISL_tar="isl-0.17.1" ;;
             "gnu:6") GCC=gcc-6.4.0 ;;
             "gnu:7") GCC=gcc-7.3.0 ;;
             "gnu:8") GCC=gcc-8.2.0 ;;
             "gnu:9") die "GCC 9.0 is currently a WIP so there is no tarball to download! Either use the git repo or choose a new version..." ;;
             "linaro:4") GCC=linaro-4.9-2017.01
-                        ISL="isl-0.17.1" ;;
+                        ISL_tar="isl-0.17.1" ;;
             "linaro:5") GCC=linaro-5.5-2017.10
-                        ISL="isl-0.17.1" ;;
+                        ISL_tar="isl-0.17.1" ;;
             "linaro:6") GCC=linaro-snapshot-6.4-2018.06 ;;
             "linaro:7") GCC=linaro-snapshot-7.3-2018.06 ;;
             "linaro:8") die "There's no such thing as Linaro 8.x Clannad..." -h ;;
@@ -385,24 +389,9 @@ function build_binaries() {
 function download_sources() {
     cd sources || die "Failed to create sources directory!"
 
-    if [[ ! -f ${MPFR}.tar.xz ]]; then
-        header "DOWNLOADING MPFR"
-        axel https://www.mpfr.org/mpfr-current/${MPFR}.tar.xz
-    fi
-
     if [[ ! -f ${GMP}.tar.lz ]]; then
         header "DOWNLOADING GMP"
         axel https://gmplib.org/download/snapshot/"${GMP}".tar.lz
-    fi
-
-    if [[ ! -f ${MPC}.tar.gz ]]; then
-        header "DOWNLOADING MPC"
-        axel https://ftp.gnu.org/gnu/mpc/${MPC}.tar.gz
-    fi
-
-    if [[ ! -f ${GLIBC}.tar.xz ]]; then
-        header "DOWNLOADING GLIBC"
-        axel https://ftp.gnu.org/gnu/glibc/${GLIBC}.tar.xz
     fi
 
     if [[ ! -f linux-${LINUX}.tar.xz ]]; then
@@ -411,6 +400,21 @@ function download_sources() {
     fi
 
     if [[ -z ${TARBALLS} ]]; then
+        if [[ ! -d mpfr ]]; then
+            header "DOWNLOADING MPFR"
+            svn co svn://scm.gforge.inria.fr/svnroot/mpfr/${MPFR_svn} mpfr
+        fi
+
+        if [[ ! -d mpc ]]; then
+            header "DOWNLOADING MPC"
+            git_clone https://scm.gforge.inria.fr/anonscm/git/mpc/mpc.git -b ${MPC_git}
+        fi
+
+        if [[ ! -d glibc ]]; then
+            header "DOWNLOADING GLIBC"
+            git_clone git://sourceware.org/git/glibc.git -b ${GLIBC_git}
+        fi
+
         if [[ ! -d binutils ]]; then
             header "DOWNLOADING BINUTILS"
             git_clone https://git.linaro.org/toolchain/binutils-gdb.git binutils -b ${BINUTILS_git}
@@ -418,7 +422,7 @@ function download_sources() {
 
         if [[ ! -d isl ]]; then
             header "DOWNLOADING ISL"
-            git_clone git://repo.or.cz/isl.git -b ${ISL}
+            git_clone git://repo.or.cz/isl.git -b ${ISL_git}
         fi
 
         if [[ ! -d gcc ]]; then
@@ -426,14 +430,29 @@ function download_sources() {
             git_clone https://git.linaro.org/toolchain/gcc.git -b ${GCC}
         fi
     else
+        if [[ ! -f ${MPFR_tar}.tar.xz ]]; then
+            header "DOWNLOADING MPFR"
+            axel https://www.mpfr.org/mpfr-current/${MPFR_tar}.tar.xz
+        fi
+
+        if [[ ! -f ${MPC_tar}.tar.gz ]]; then
+            header "DOWNLOADING MPC"
+            axel https://ftp.gnu.org/gnu/mpc/${MPC_tar}.tar.gz
+        fi
+
+        if [[ ! -f ${GLIBC_tar}.tar.xz ]]; then
+            header "DOWNLOADING GLIBC"
+            axel https://ftp.gnu.org/gnu/glibc/${GLIBC_tar}.tar.xz
+        fi
+
         if [[ ! -f binutils-${BINUTILS_tar}.tar.xz ]]; then
             header "DOWNLOADING BINUTILS"
             axel https://ftp.gnu.org/gnu/binutils/binutils-${BINUTILS_tar}.tar.xz
         fi
 
-        if [[ ! -f ${ISL}.tar.xz ]]; then
-            header "DOWNLOADING ISL ${ISL} FOR GCC ${VERSION}"
-            axel http://isl.gforge.inria.fr/${ISL}.tar.xz
+        if [[ ! -f ${ISL_tar}.tar.xz ]]; then
+            header "DOWNLOADING ISL ${ISL_tar} FOR GCC ${VERSION}"
+            axel http://isl.gforge.inria.fr/${ISL_tar}.tar.xz
         fi
 
         if [[ ${SOURCE} == "gnu" ]]; then
@@ -468,14 +487,14 @@ function extract() {
 # Extract tarballs to their proper locations
 function extract_sources() {
     header "EXTRACTING DOWNLOADED TARBALLS"
-    extract ${MPFR}.tar.xz ../${MPFR}
     extract "${GMP}".tar.lz ../"${GMP}"
-    extract ${MPC}.tar.gz ../${MPC}
-    extract ${GLIBC}.tar.xz ../${GLIBC}
     extract linux-${LINUX}.tar.xz ../linux
     if [[ -n ${TARBALLS} ]]; then
+        extract ${MPFR_tar}.tar.xz ../${MPFR_tar}
+        extract ${MPC_tar}.tar.gz ../${MPC_tar}
+        extract ${GLIBC_tar}.tar.xz ../${GLIBC_tar}
         extract binutils-${BINUTILS_tar}.tar.xz ../binutils
-        extract ${ISL}.tar.xz ../${ISL}
+        extract ${ISL_tar}.tar.xz ../${ISL_tar}
         extract ${GCC_TAR} ../gcc
     fi
 }
@@ -486,9 +505,28 @@ function update_repos() {
     if [[ -z ${NO_UPDATE} && -z ${TARBALLS} ]]; then
         header "UPDATING SOURCES"
         (
+            cd mpfr || die "MPFR did not get fetched properly!"
+            svn up
+            ./autogen.sh
+            automake --add-missing
+        )
+        (
+            cd mpc || die "MPC did not get cloned properly!"
+            git remote update
+            git checkout ${MPC_git}
+            git reset --hard HEAD
+            autoreconf -i
+        )
+        (
+            cd glibc || die "GLIBC did not get cloned properly!"
+            git remote update
+            git checkout ${GLIBC_git}
+            git reset --hard HEAD
+        )
+        (
             cd isl || die "ISL did not get cloned properly!"
             git remote update
-            git checkout ${ISL}
+            git checkout ${ISL_git}
             git reset --hard HEAD
             ./autogen.sh
         )
@@ -507,6 +545,19 @@ function update_repos() {
             git reset --hard ${BRANCH}
         )
     else
+        if [[ -d mpfr ]]; then
+            (
+                cd mpfr || die "MPFR did not get downloaded properly!"
+                ./autogen.sh
+                automake --add-missing
+            )
+        fi
+        if [[ -d mpc ]]; then
+            (
+                cd mpc || die "MPC did not get downloaded properly!"
+                autoreconf -i
+            )
+        fi
         if [[ -d isl ]]; then
             (
                 cd isl || die "ISL did not get downloaded properly!"
@@ -517,6 +568,7 @@ function update_repos() {
 
     cd ..
 
+    [[ ! -d glibc ]] && ln -s sources/glibc glibc
     [[ ! -d linux ]] && ln -s sources/linux linux
     [[ ! -d binutils ]] && ln -s sources/binutils binutils
     [[ ! -d gcc ]] && ln -s sources/gcc gcc
@@ -541,13 +593,15 @@ function setup_env() {
     fi
 
     cd gcc || die "GCC folder does not exit!"
-    ln -s -f "${ROOT}/${MPFR}" mpfr
     ln -s -f "${ROOT}/${GMP}" gmp
-    ln -s -f "${ROOT}/${MPC}" mpc
     if [[ -n ${TARBALLS} ]]; then
-        ln -s -f "${ROOT}/${ISL}" isl
+        ln -s -f "${ROOT}/${MPFR_tar}" mpfr
+        ln -s -f "${ROOT}/${ISL_tar}" isl
+        ln -s -f "${ROOT}/${MPC_tar}" mpc
     else
+        ln -s -f "${ROOT}/mpfr" mpfr
         ln -s -f "${ROOT}/isl" isl
+        ln -s -f "${ROOT}/mpc" mpc
     fi
     cd ..
 
@@ -603,6 +657,8 @@ function build_gcc() {
 function build_glibc() {
     header "MAKING GLIBC"
     cd ../build-glibc || die "glibc build folder does not exist!"
+    [[ ! ${TARBALLS} ]] && GLIBC=glibc \
+                        || GLIBC=${GLIBC_tar}
     ../${GLIBC}/configure --prefix="${INSTALL}/${TARGET}" \
                           --build="${MACHTYPE}" \
                           --host=${TARGET} \
