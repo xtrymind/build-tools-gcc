@@ -227,7 +227,7 @@ function parse_parameters() {
 
     [[ -z ${NO_TMPFS} ]] && check_sudo
     [[ -z ${VERBOSE} ]] && exec 6>&2 5>&1 &>/dev/null
-    [[ -z ${FULL_SOURCE} ]] && DEPTH_FLAG=true
+    [[ -z ${FULL_SOURCE} ]] && FULL_SOURCE=true
 
     # Default values
     case "${ARCH}" in
