@@ -513,22 +513,25 @@ function update_repos() {
         )
         (
             cd mpc || die "MPC did not get cloned properly!"
-            git remote update
-            git checkout ${MPC_git}
-            git reset --hard HEAD
+            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${MPC_git} || BRANCH=FETCH_HEAD
+            git_fetch origin ${MPC_git}
+            git checkout ${MPC_git} || git checkout -b ${MPC_git} ${BRANCH}
+            git reset --hard ${BRANCH}
             autoreconf -i
         )
         (
             cd glibc || die "GLIBC did not get cloned properly!"
-            git remote update
-            git checkout ${GLIBC_git}
-            git reset --hard HEAD
+            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${GLIBC_git} || BRANCH=FETCH_HEAD
+            git_fetch origin ${GLIBC_git}
+            git checkout ${GLIBC_git} || git checkout -b ${GLIBC_git} ${BRANCH}
+            git reset --hard ${BRANCH}
         )
         (
             cd isl || die "ISL did not get cloned properly!"
-            git remote update
-            git checkout ${ISL_git}
-            git reset --hard HEAD
+            [[ -n ${FULL_SOURCE} ]] && BRANCH=origin/${ISL_git} || BRANCH=FETCH_HEAD
+            git_fetch origin ${ISL_git}
+            git checkout ${ISL_git} || git checkout -b ${ISL_git} ${BRANCH}
+            git reset --hard ${BRANCH}
             ./autogen.sh
         )
         (
