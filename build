@@ -136,17 +136,6 @@ function check_date() {
 }
 
 
-# Check if user needs to enter sudo password or not
-function check_sudo() {
-    echo
-    echo "Checking if sudo is available, please enter your password if a prompt appears!"
-    if ! sudo -v 2>/dev/null; then
-        warn "Sudo is not available! Disabling the option for tmpfs..." -n
-        NO_TMPFS=true
-    fi
-}
-
-
 # Unmount tmpfs
 function unmount_tmpfs() {
     if [[ -z ${NO_TMPFS} ]]; then
@@ -225,7 +214,6 @@ function parse_parameters() {
         shift
     done
 
-    [[ -z ${NO_TMPFS} ]] && check_sudo
     [[ -z ${VERBOSE} ]] && exec 6>&2 5>&1 &>/dev/null
     [[ -z ${FULL_SOURCE} ]] && FULL_SOURCE=true
 
