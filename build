@@ -181,7 +181,7 @@ function setup_variables() {
     MPC_tar="mpc-1.1.0"
     ISL_git="master"
     ISL_tar="isl-0.20"
-    GLIBC_git="master"
+    GLIBC_git="glibc-2.28"
     GLIBC_tar="glibc-2.28"
     LINUX="4.18"
 
