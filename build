@@ -566,6 +566,9 @@ function update_repos() {
     [[ ! -d linux ]] && ln -s sources/linux linux
     [[ ! -d binutils ]] && ln -s sources/binutils binutils
     [[ ! -d gcc ]] && ln -s sources/gcc gcc
+    [[ ! -d isl ]] && ln -s sources/isl isl
+    [[ ! -d mpc ]] && ln -s sources/mpc mpc
+    [[ ! -d mpfr ]] && ln -s sources/mpfr mpfr
 }
 
 
